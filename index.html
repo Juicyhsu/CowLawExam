@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>律師一試複習</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ── 桌機頂部導覽 ── -->
+<header class="topbar" id="topbar">
+  <div class="logo">⚖️ 律師一試複習</div>
+  <nav class="law-tabs" id="law-tabs"></nav>
+  <div class="topbar-right">
+    <span class="stat-badge" id="stat-badge"></span>
+    <button class="auth-btn" id="auth-btn">登入</button>
+  </div>
+</header>
+
+<!-- ── 帳號面板（滑入） ── -->
+<div class="auth-panel hidden" id="auth-panel">
+  <div class="auth-panel-inner">
+    <div class="auth-tabs">
+      <button class="atab active" data-atab="login">登入</button>
+      <button class="atab" data-atab="register">註冊</button>
+    </div>
+    <div id="auth-form-area">
+      <div id="auth-login">
+        <input class="auth-input" type="email" id="login-email" placeholder="Email">
+        <input class="auth-input" type="password" id="login-pw" placeholder="密碼">
+        <button class="btn-primary w100" id="btn-login">登入</button>
+        <div class="auth-msg" id="login-msg"></div>
+      </div>
+      <div id="auth-register" class="hidden">
+        <input class="auth-input" type="email" id="reg-email" placeholder="Email">
+        <input class="auth-input" type="password" id="reg-pw" placeholder="密碼（6字元以上）">
+        <button class="btn-primary w100" id="btn-register">建立帳號</button>
+        <div class="auth-msg" id="reg-msg"></div>
+      </div>
+      <div id="auth-loggedin" class="hidden">
+        <p class="auth-user-email" id="auth-user-email"></p>
+        <p class="auth-sync-info" id="auth-sync-info">進度已同步至雲端 ☁️</p>
+        <button class="btn-outline w100" id="btn-logout">登出</button>
+        <button class="btn-warning w100" id="btn-clear-subject">清除本科進度</button>
+        <button class="btn-danger w100" id="btn-clear-progress">清除所有紀錄</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 主版面 ── -->
+<div class="layout" id="layout">
+
+  <!-- 左欄：主題列表 (桌機) -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <span class="sidebar-title" id="sidebar-title">主題</span>
+      <button class="collapse-btn" id="collapse-btn">◀</button>
+    </div>
+    <div class="topic-list" id="topic-list"></div>
+  </aside>
+
+  <!-- 主內容 -->
+  <main class="main" id="main">
+    <div class="mode-tabs" id="mode-tabs">
+      <button class="mtab active" data-mode="concept">📖 概念複習</button>
+      <button class="mtab" data-mode="quiz">✏️ 考題練習</button>
+    </div>
+
+    <!-- 概念複習 -->
+    <section class="panel" id="panel-concept">
+      <nav class="concept-topic-nav" id="concept-topic-nav"></nav>
+      <div id="concept-header" class="concept-header"></div>
+      <div id="concept-area"><div class="placeholder">← 請從左側選擇科目開始複習</div></div>
+    </section>
+
+    <!-- 考題練習 -->
+    <section class="panel hidden" id="panel-quiz">
+      <div class="filter-bar">
+        <div class="filter-row">
+          <span class="filter-label">📅 年份</span>
+          <div id="year-checks" class="year-checks"></div>
+          <button class="btn-xs" id="year-all">全選</button>
+          <button class="btn-xs" id="year-none">清除</button>
+        </div>
+        <div class="filter-row">
+          <span class="filter-label">📐 順序</span>
+          <label class="radio-label"><input type="radio" name="qorder" value="by_topic" checked> 依主題重要度</label>
+          <label class="radio-label"><input type="radio" name="qorder" value="by_seq"> 依序</label>
+          <button class="btn-primary" id="btn-start">開始練習</button>
+        </div>
+      </div>
+      <div id="quiz-area"><div class="placeholder">選好設定後，按「開始練習」</div></div>
+      <div class="quiz-nav hidden" id="quiz-nav">
+        <button class="btn-outline" id="q-prev">← 上題</button>
+        <span id="q-progress" class="q-progress"></span>
+        <button class="btn-outline" id="q-next">下題 →</button>
+        <span id="q-score" class="q-score"></span>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ── 手機底部 Tab Bar ── -->
+<nav class="mobile-tabbar" id="mobile-tabbar">
+  <button class="mbar-btn" data-mview="subjects">
+    <span class="mbar-icon">📚</span><span class="mbar-label">科目</span>
+  </button>
+  <button class="mbar-btn" data-mview="concept">
+    <span class="mbar-icon">📖</span><span class="mbar-label">複習</span>
+  </button>
+  <button class="mbar-btn active" data-mview="quiz">
+    <span class="mbar-icon">✏️</span><span class="mbar-label">練習</span>
+  </button>
+  <button class="mbar-btn" data-mview="account">
+    <span class="mbar-icon">👤</span><span class="mbar-label">帳號</span>
+  </button>
+</nav>
+
+<!-- ── 手機科目選擇頁 ── -->
+<div class="mobile-view hidden" id="mview-subjects">
+  <div class="mv-header">選擇科目</div>
+  <div class="mobile-subject-list" id="mobile-subject-list"></div>
+</div>
+
+<!-- ── 手機帳號頁 ── -->
+<div class="mobile-view hidden" id="mview-account">
+  <div class="mv-header">帳號</div>
+  <div class="mobile-auth-area" id="mobile-auth-area"></div>
+</div>
+
+<script src="js/questions_data.js"></script>
+<script src="js/flashcards.js"></script>
+<script src="js/generated_flashcards.js"></script>
+<script src="js/overrides.js"></script>
+<script src="js/explanations_data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

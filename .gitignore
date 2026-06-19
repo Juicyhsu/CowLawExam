@@ -1,0 +1,7 @@
+progress.db
+.env
+__pycache__/
+*.pyc
+*.pyo
+explanation_progress.json
+*.bat
