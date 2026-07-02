@@ -5,3 +5,5 @@ __pycache__/
 *.pyo
 explanation_progress.json
 *.bat
+*.gz
+js_diff.txt

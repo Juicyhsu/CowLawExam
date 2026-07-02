@@ -10,7 +10,7 @@ md_to_js.py
 import re, json
 from pathlib import Path
 
-SCRIPT_DIR = Path(__file__).parent
+SCRIPT_DIR = Path(__file__).parent.parent
 MD_DIR     = SCRIPT_DIR.parent / '詳解'
 OUT_JS     = SCRIPT_DIR / 'js' / 'explanations_data.js'
 
@@ -38,7 +38,7 @@ SUBJECT_TO_SUBJ = {
 HEADER_RE = re.compile(r'【(\d+)\s*年[^】]{0,30}?第\s*(\d+)\s*題[^】]*?】')
 
 # 停止關鍵字（在選項文本中遇到時截斷）
-STOP_KEYWORDS = ['法律依據', '核心概念', '補充提醒']
+STOP_KEYWORDS = ['法律依據', '備註法規與引註', '核心概念', '補充提醒']
 
 
 def clean_text(s):
@@ -147,7 +147,7 @@ def parse_block(block):
 
     # ── 核心概念 ────────────────────────────────────────────────
     concept = ''
-    m_c = re.search(r'核心概念[：:]\s*([\s\S]*?)(?=\n\n|\n補充提醒|\n法律依據|\n---|\Z)', block)
+    m_c = re.search(r'核心概念[：:]\s*([\s\S]*?)(?=\n\n|\n補充提醒|\n法律依據|\n備註法規與引註|\n---|\Z)', block)
     if m_c:
         raw = m_c.group(1).strip()
         # 移除嵌入的補充提醒（部分檔案會在同一行繼續寫）
@@ -157,7 +157,7 @@ def parse_block(block):
     # ── 補充提醒 ────────────────────────────────────────────────
     supplement = ''
     # 1. 顯式 補充提醒：...
-    m_s = re.search(r'(?:⚠️\s*)?補充提醒[：:]\s*([\s\S]*?)(?=\n\n|\n---|\n法律依據|\Z)', block)
+    m_s = re.search(r'(?:⚠️\s*)?補充提醒[：:]\s*([\s\S]*?)(?=\n\n|\n---|\n法律依據|\n備註法規與引註|\Z)', block)
     if m_s:
         s = m_s.group(1).strip()
         if s and not re.match(r'^-+$', s) and s.lower() != '無' and s != '撰寫':
@@ -172,7 +172,7 @@ def parse_block(block):
 
     # ── 法律依據 ────────────────────────────────────────────────
     law_basis = ''
-    m_l = re.search(r'法律依據[：:]\s*(.+)', block)
+    m_l = re.search(r'(?:法律依據|備註法規與引註)[：:]\s*(.+)', block)
     if m_l:
         # 只取第一行（citation），避免複製全文
         law_basis = m_l.group(1).strip().split('\n')[0].strip()

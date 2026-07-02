@@ -18,6 +18,9 @@
   </div>
 </header>
 
+<!-- ── 手機科目選擇 Bar（頂部常駐） ── -->
+<div class="mobile-law-tabs" id="mobile-law-tabs"></div>
+
 <!-- ── 帳號面板（滑入） ── -->
 <div class="auth-panel hidden" id="auth-panel">
   <div class="auth-panel-inner">
@@ -52,6 +55,9 @@
 <!-- ── 主版面 ── -->
 <div class="layout" id="layout">
 
+  <!-- 側欄展開頁籤（收起時顯示） -->
+  <button class="sidebar-tab hidden" id="sidebar-tab" title="展開主題列表">▶</button>
+
   <!-- 左欄：主題列表 (桌機) -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-head">
@@ -66,13 +72,14 @@
     <div class="mode-tabs" id="mode-tabs">
       <button class="mtab active" data-mode="concept">📖 概念複習</button>
       <button class="mtab" data-mode="quiz">✏️ 考題練習</button>
+      <button class="mtab" data-mode="audio">🎧 聽讀複習</button>
     </div>
 
     <!-- 概念複習 -->
     <section class="panel" id="panel-concept">
-      <nav class="concept-topic-nav" id="concept-topic-nav"></nav>
       <div id="concept-header" class="concept-header"></div>
-      <div id="concept-area"><div class="placeholder">← 請從左側選擇科目開始複習</div></div>
+      <nav class="concept-topic-nav" id="concept-topic-nav"></nav>
+      <div id="concept-area"></div>
     </section>
 
     <!-- 考題練習 -->
@@ -84,14 +91,19 @@
           <button class="btn-xs" id="year-all">全選</button>
           <button class="btn-xs" id="year-none">清除</button>
         </div>
+        <div class="filter-row" id="topic-chips-row" style="display:none">
+          <span class="filter-label">📌 主題<span style="font-weight:400;color:#9ca3af">（可選）</span></span>
+          <div class="topic-chips-bar" id="topic-chips-bar"></div>
+        </div>
+        <div class="topic-sel-hint hidden" id="topic-sel-hint">尚未選擇主題，將練習本科全部題目</div>
         <div class="filter-row">
           <span class="filter-label">📐 順序</span>
-          <label class="radio-label"><input type="radio" name="qorder" value="by_topic" checked> 依主題重要度</label>
+          <label class="radio-label"><input type="radio" name="qorder" value="by_topic" checked> 依主題</label>
           <label class="radio-label"><input type="radio" name="qorder" value="by_seq"> 依序</label>
           <button class="btn-primary" id="btn-start">開始練習</button>
         </div>
       </div>
-      <div id="quiz-area"><div class="placeholder">選好設定後，按「開始練習」</div></div>
+      <div id="quiz-area"><div class="placeholder">請先選擇上方科目，再按「開始練習」</div></div>
       <div class="quiz-nav hidden" id="quiz-nav">
         <button class="btn-outline" id="q-prev">← 上題</button>
         <span id="q-progress" class="q-progress"></span>
@@ -99,30 +111,29 @@
         <span id="q-score" class="q-score"></span>
       </div>
     </section>
+
+    <!-- 聽讀複習（桌機＋手機共用 panel，與概念/練習同架構） -->
+    <section class="panel hidden" id="panel-audio">
+      <div id="audio-player-area"></div>
+    </section>
   </main>
 </div>
 
 <!-- ── 手機底部 Tab Bar ── -->
 <nav class="mobile-tabbar" id="mobile-tabbar">
-  <button class="mbar-btn" data-mview="subjects">
-    <span class="mbar-icon">📚</span><span class="mbar-label">科目</span>
-  </button>
   <button class="mbar-btn" data-mview="concept">
     <span class="mbar-icon">📖</span><span class="mbar-label">複習</span>
   </button>
   <button class="mbar-btn active" data-mview="quiz">
     <span class="mbar-icon">✏️</span><span class="mbar-label">練習</span>
   </button>
+  <button class="mbar-btn" data-mview="audio">
+    <span class="mbar-icon">🎧</span><span class="mbar-label">聽讀</span>
+  </button>
   <button class="mbar-btn" data-mview="account">
     <span class="mbar-icon">👤</span><span class="mbar-label">帳號</span>
   </button>
 </nav>
-
-<!-- ── 手機科目選擇頁 ── -->
-<div class="mobile-view hidden" id="mview-subjects">
-  <div class="mv-header">選擇科目</div>
-  <div class="mobile-subject-list" id="mobile-subject-list"></div>
-</div>
 
 <!-- ── 手機帳號頁 ── -->
 <div class="mobile-view hidden" id="mview-account">
@@ -134,7 +145,7 @@
 <script src="js/flashcards.js"></script>
 <script src="js/generated_flashcards.js"></script>
 <script src="js/overrides.js"></script>
-<script src="js/explanations_data.js"></script>
+<!-- explanations_data.js（詳解 571KB）與 audio_scripts.js（聽讀）改為延遲載入，加快首屏，見 app.js loadScriptOnce -->
 <script src="js/app.js"></script>
 </body>
 </html>
