@@ -527,20 +527,16 @@ def index():
 @app.route('/<path:path>')
 def static_files(path):
     # 若有預壓縮 .gz 且瀏覽器支援 gzip，送壓縮版以加速傳輸
-    # 但只有當 .gz 比 .js 新（或同時間）才送，避免舊 gz 遮蓋新 js
+    # 由於 git 會打亂部署時的 mtime，我們只要確定 .gz 存在就直接送
     if path.endswith('.js') and 'gzip' in request.headers.get('Accept-Encoding', ''):
-        js_full = os.path.join(STATIC_DIR, path)
         gz_full = os.path.join(STATIC_DIR, path + '.gz')
         if os.path.isfile(gz_full):
-            js_mtime = os.path.getmtime(js_full) if os.path.isfile(js_full) else 0
-            gz_mtime = os.path.getmtime(gz_full)
-            if gz_mtime >= js_mtime:
-                resp = send_file(gz_full, mimetype='application/javascript', conditional=True)
-                resp.headers['Content-Encoding'] = 'gzip'
-                resp.headers['Vary'] = 'Accept-Encoding'
-                resp.cache_control.max_age = 604800
-                resp.cache_control.public = True
-                return resp
+            resp = send_file(gz_full, mimetype='application/javascript', conditional=True)
+            resp.headers['Content-Encoding'] = 'gzip'
+            resp.headers['Vary'] = 'Accept-Encoding'
+            resp.cache_control.max_age = 604800
+            resp.cache_control.public = True
+            return resp
     resp = send_from_directory(STATIC_DIR, path)
     if path.startswith('js/') and path.endswith('.js'):
         resp.cache_control.max_age = 604800
