@@ -1551,6 +1551,14 @@ window.App = (function () {
     banner.textContent = '✔ 正確答案：(' + correct + ')';
     box.appendChild(banner);
 
+    if (stored && stored.general_reason) {
+      var gb = mk('div', 'expl-concept');
+      gb.style.marginTop = '10px';
+      gb.style.whiteSpace = 'pre-wrap';
+      gb.innerHTML = '<div class="expl-concept-label">📝 綜合解析</div>' + escHtml(stored.general_reason);
+      box.appendChild(gb);
+    }
+
     var optsDiv = mk('div', 'expl-opts');
     ['A','B','C','D'].forEach(function(letter){
       if (!q.options || !q.options[letter]) return;
@@ -2839,7 +2847,7 @@ window.App = (function () {
     if (_scriptState[url] === 'loading') return;
     _scriptState[url] = 'loading';
     var s = document.createElement('script');
-    s.src = url;
+    s.src = url + '?v=1150705_2';
     s.onload = function () {
       _scriptState[url] = 'ready';
       (_scriptWaiters[url] || []).forEach(function (f) { f(); });

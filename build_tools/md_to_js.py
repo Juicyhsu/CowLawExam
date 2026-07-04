@@ -177,8 +177,19 @@ def parse_block(block):
         # 只取第一行（citation），避免複製全文
         law_basis = m_l.group(1).strip().split('\n')[0].strip()
 
-    # 若選項或概念都沒有，跳過
-    if not options and not concept:
+    # 若選項、概念、且無 general_reason 都沒有，跳過
+    general_reason = ''
+    if not options:
+        cut = len(analysis_text)
+        for kw in STOP_KEYWORDS:
+            m_kw = re.search(r'\n' + kw + r'[：:]', analysis_text)
+            if m_kw and m_kw.start() < cut:
+                cut = m_kw.start()
+        clean_analysis = analysis_text[:cut].strip()
+        if clean_analysis:
+            general_reason = clean_analysis
+            
+    if not options and not concept and not general_reason:
         return None
 
     return {
@@ -186,6 +197,7 @@ def parse_block(block):
         'concept':    concept,
         'law_basis':  law_basis,
         'supplement': supplement,
+        'general_reason': general_reason,
     }
 
 
