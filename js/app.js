@@ -723,9 +723,17 @@ window.App = (function () {
       hide('panel-audio');
       if (mode === 'concept') {
         show('panel-concept'); hide('panel-quiz');
-        renderConceptArea();
+        // 保留進度：如果已有內容就不重新渲染
+        var cArea = $q('#concept-area');
+        if (!cArea || !cArea.children.length || cArea.querySelector('.placeholder')) {
+          renderConceptArea();
+        }
       } else {
         hide('panel-concept'); show('panel-quiz');
+        // 保留進度：如果已在做題就保持當前狀態
+        if (S.pool.length) {
+          show('quiz-nav'); $q('#main').classList.add('quiz-active');
+        }
       }
     }
   }
@@ -1280,6 +1288,15 @@ window.App = (function () {
     $q('#q-next').addEventListener('click', function(){ goQuestion(1); });
   }
 
+  // ── 作答位置記憶用的 key 生成 ──
+  function _quizPosKey(orderVal) {
+    if (orderVal === 'by_topic') {
+      return 'quiz_pos_' + (S.lawSubject||'') + '_' + (S.topic||'all') + '_byTopic';
+    } else {
+      return 'quiz_pos_' + (S.lawSubject||'') + '_bySeq';
+    }
+  }
+
   function startQuiz() {
     if (!S.lawSubject) {
       $q('#quiz-area').innerHTML = '<div class="placeholder">請先點選上方科目欄選擇科目</div>';
@@ -1323,6 +1340,14 @@ window.App = (function () {
     }
     S.pool = questions;
     S.idx  = 0;
+    // ── 作答位置記憶：嘗試從 localStorage 恢復上次位置 ──
+    var posKey = _quizPosKey(orderVal);
+    var savedPos = parseInt(localStorage.getItem(posKey) || '0');
+    if (savedPos > 0 && savedPos < questions.length) {
+      if (confirm('上次做到第 ' + (savedPos + 1) + ' / ' + questions.length + ' 題，是否從上次位置繼續？')) {
+        S.idx = savedPos;
+      }
+    }
     show('quiz-nav');
     $q('#main').classList.add('quiz-active');
     renderQuestion();
@@ -1401,18 +1426,64 @@ window.App = (function () {
     noteHdr.innerHTML =
       '<span>📝 我的筆記</span>' +
       (hasNote ? '<span class="q-note-indicator">已有筆記</span>' : '') +
-      '<button class="q-note-toggle">' + (hasNote ? '收起' : '展開') + '</button>';
-    var noteBody = mk('div', 'q-note-body' + (hasNote ? '' : ' hidden'));
-    noteBody.innerHTML =
-      '<textarea class="q-note-textarea" rows="4" placeholder="輸入你對這題的筆記…">' +
-        escHtml(S.qnotes[q.id] || '') +
-      '</textarea>' +
-      '<div class="q-note-actions">' +
-        '<button class="ai-refine-btn q-note-ai-btn">✨ AI 整理</button>' +
-        '<span class="ai-refine-hint q-note-ai-hint"></span>' +
-        '<button class="btn-outline q-note-cancel">取消</button>' +
-        '<button class="btn-primary q-note-save">儲存筆記</button>' +
-      '</div>';
+      '<button class="q-note-toggle">收起</button>';
+    var noteBody = mk('div', 'q-note-body');
+
+    // ── 筆記初始顯示：有筆記時先顯示唯讀模式，無筆記時直接顯示編輯模式 ──
+    function _renderNoteEditMode() {
+      noteBody.innerHTML =
+        '<textarea class="q-note-textarea" rows="8" placeholder="輸入你對這題的筆記…">' +
+          escHtml(S.qnotes[q.id] || '') +
+        '</textarea>' +
+        '<div class="q-note-actions">' +
+          '<button class="ai-refine-btn q-note-ai-btn">✨ AI 整理</button>' +
+          '<span class="ai-refine-hint q-note-ai-hint"></span>' +
+          '<button class="btn-outline q-note-cancel">取消</button>' +
+          '<button class="btn-primary q-note-save">儲存筆記</button>' +
+        '</div>';
+      noteBody.querySelector('.q-note-cancel').addEventListener('click', function(){
+        noteBody.querySelector('.q-note-textarea').value = S.qnotes[q.id] || '';
+        var preview = noteBody.querySelector('.ai-preview-box');
+        if (preview) preview.remove();
+        if (hasNote || (S.qnotes[q.id] && S.qnotes[q.id].trim())) {
+          _renderNoteReadMode();
+        }
+      });
+      noteBody.querySelector('.q-note-ai-btn').addEventListener('click', function(){
+        aiRefineText(noteBody.querySelector('.q-note-textarea'), 'question_note', noteBody.querySelector('.q-note-ai-hint'));
+      });
+      noteBody.querySelector('.q-note-save').addEventListener('click', function(){
+        var text = noteBody.querySelector('.q-note-textarea').value.trim();
+        S.qnotes[q.id] = text;
+        saveLocalQnotes();
+        syncQnote(q.id, text);
+        var ind = noteHdr.querySelector('.q-note-indicator');
+        if (text && !ind) {
+          var newInd = mk('span', 'q-note-indicator', '已有筆記');
+          noteHdr.insertBefore(newInd, noteHdr.querySelector('.q-note-toggle'));
+        } else if (!text && ind) { ind.remove(); }
+        hasNote = !!text;
+        if (text) {
+          _renderNoteReadMode();
+        }
+        var saveMsg = mk('span', 'q-note-saved-msg', '✓ 已儲存');
+        noteBody.insertBefore(saveMsg, noteBody.firstChild);
+        setTimeout(function(){ if (saveMsg.parentNode) saveMsg.remove(); }, 2000);
+      });
+    }
+    function _renderNoteReadMode() {
+      noteBody.innerHTML =
+        '<div class="q-note-display">' + escHtml(S.qnotes[q.id] || '').replace(/\n/g, '<br>') + '</div>' +
+        '<button class="btn-outline q-note-edit-btn">✏️ 編輯筆記</button>';
+      noteBody.querySelector('.q-note-edit-btn').addEventListener('click', function(){
+        _renderNoteEditMode();
+      });
+    }
+    if (hasNote) {
+      _renderNoteReadMode();
+    } else {
+      _renderNoteEditMode();
+    }
     noteArea.appendChild(noteHdr);
     noteArea.appendChild(noteBody);
 
@@ -1421,35 +1492,6 @@ window.App = (function () {
       noteBody.classList.toggle('hidden', open);
       this.textContent = open ? '展開' : '收起';
     });
-    noteBody.querySelector('.q-note-cancel').addEventListener('click', function(){
-      noteBody.querySelector('.q-note-textarea').value = S.qnotes[q.id] || '';
-      var preview = noteBody.querySelector('.ai-preview-box');
-      if (preview) preview.remove();
-      noteBody.classList.add('hidden');
-      noteHdr.querySelector('.q-note-toggle').textContent = '展開';
-    });
-    noteBody.querySelector('.q-note-ai-btn').addEventListener('click', function(){
-      aiRefineText(noteBody.querySelector('.q-note-textarea'), 'question_note', noteBody.querySelector('.q-note-ai-hint'));
-    });
-    noteBody.querySelector('.q-note-save').addEventListener('click', function(){
-      var text = noteBody.querySelector('.q-note-textarea').value.trim();
-      S.qnotes[q.id] = text;
-      saveLocalQnotes();
-      syncQnote(q.id, text);
-      var ind = noteHdr.querySelector('.q-note-indicator');
-      if (text && !ind) {
-        var newInd = mk('span', 'q-note-indicator', '已有筆記');
-        noteHdr.insertBefore(newInd, noteHdr.querySelector('.q-note-toggle'));
-      } else if (!text && ind) { ind.remove(); }
-      var saveMsg = mk('span', 'ai-refine-hint', '✓ 已儲存');
-      saveMsg.style.color = '#2a9d8f';
-      var actRow = noteBody.querySelector('.q-note-actions');
-      var oldMsg = actRow.querySelector('.save-msg');
-      if (oldMsg) oldMsg.remove();
-      saveMsg.classList.add('save-msg');
-      actRow.appendChild(saveMsg);
-      setTimeout(function(){ if (saveMsg.parentNode) saveMsg.remove(); }, 1500);
-    });
     area.appendChild(noteArea);
 
     // 進度列
@@ -1457,6 +1499,11 @@ window.App = (function () {
     var tried   = S.pool.slice(0, S.idx+1).filter(function(qq){ return S.answers[qq.id]; }).length;
     var correct = S.pool.slice(0, S.idx+1).filter(function(qq){ return S.answers[qq.id] && S.answers[qq.id].correct; }).length;
     $q('#q-score').textContent = tried ? '答對 ' + correct + '/' + tried : '';
+    // ── 儲存當前作答位置 ──
+    var order = $q('input[name="qorder"]:checked');
+    var orderVal = order ? order.value : 'by_topic';
+    var posKey = _quizPosKey(orderVal);
+    localStorage.setItem(posKey, String(S.idx));
     if (isMobile()) window.scrollTo(0, 0);
   }
 
@@ -1576,7 +1623,7 @@ window.App = (function () {
     box.innerHTML =
       '<div class="ai-chat-label">🤖 AI 追問</div>' +
       '<div class="ai-chat-row">' +
-        '<textarea class="ai-chat-input" placeholder="對這題有疑問？請輸入後按送出…" rows="2"></textarea>' +
+        '<textarea class="ai-chat-input" placeholder="對這題有疑問？請輸入後按送出…" rows="4"></textarea>' +
         '<button class="ai-chat-btn">送出</button>' +
       '</div>' +
       '<div class="ai-answer" style="display:none"></div>';
@@ -2655,7 +2702,11 @@ window.App = (function () {
       $a('.mtab').forEach(function(b){ b.classList.toggle('active', b.dataset.mode==='concept'); });
       S.mode = 'concept';
       renderTopicList(); // 手機切換模式同步更新主題列表
-      renderConceptArea();
+      // 保留進度：如果已有內容就不重新渲染
+      var cArea = $q('#concept-area');
+      if (!cArea || !cArea.children.length || cArea.querySelector('.placeholder')) {
+        renderConceptArea();
+      }
       requestAnimationFrame(function(){ document.documentElement.scrollTop = 0; document.body.scrollTop = 0; });
     } else if (view === 'quiz') {
       hide('panel-concept'); show('panel-quiz');
@@ -2664,6 +2715,7 @@ window.App = (function () {
       renderTopicList(); // 手機切換模式同步更新主題列表
       updateTopicChip();
       renderTopicChipsBar();
+      // 保留進度：如果已在做題就保持當前狀態
       if (S.pool.length) {
         show('quiz-nav'); $q('#main').classList.add('quiz-active');
       }
